@@ -25,3 +25,5 @@ Usage:
 
 Note: dB file is contain in the root dir (glide.sql)
 
+Run the project in -> http://localhost/
+
