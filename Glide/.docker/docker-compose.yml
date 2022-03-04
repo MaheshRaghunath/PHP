@@ -1,0 +1,141 @@
+version: '3.7'
+
+networks:
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+volumes:
+  mysql:
+    name: mysql
+    driver: ${VOLUMES_DRIVER}
+  redis:
+    name: redis
+    driver: ${VOLUMES_DRIVER}
+  logs:
+    name: logs
+    driver: ${VOLUMES_DRIVER}
+  cache:
+    name: cache
+    driver: ${VOLUMES_DRIVER}
+
+services:
+  nginx:
+    image: glide/nginx
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+      args:
+        - APP_CODE_PATH=${APP_CODE_PATH_CONTAINER}
+        - APP_GROUP=${APP_GROUP}
+        - APP_GROUP_ID=${APP_GROUP_ID}
+        - APP_USER=${APP_USER}
+        - APP_USER_ID=${APP_USER_ID}
+        - NGINX_VERSION=${NGINX_VERSION}
+        - TZ=${TIMEZONE}
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+    ports:
+      - "${NGINX_HTTP_PORT_HOST}:80"
+      - "${NGINX_HTTPS_PORT_HOST}:443"
+    networks:
+      backend:
+        aliases:
+          - ${APP_HOST}
+
+  php-fpm:
+    image: glide/php-fpm
+    build:
+      context: .
+      dockerfile: ./php-fpm/Dockerfile
+      args:
+        - APP_CACHE_PATH=${APP_CACHE_PATH_CONTAINER}
+        - APP_CODE_PATH=${APP_CODE_PATH_CONTAINER}
+        - APP_GROUP=${APP_GROUP}
+        - APP_GROUP_ID=${APP_GROUP_ID}
+        - APP_LOG_PATH=${APP_LOG_PATH_CONTAINER}
+        - APP_USER=${APP_USER}
+        - APP_USER_ID=${APP_USER_ID}
+        - TARGET_PHP_VERSION=${PHP_VERSION}
+        - TZ=${TIMEZONE}
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      - cache:${APP_CACHE_PATH_CONTAINER}
+      - logs:${APP_LOG_PATH_CONTAINER}
+    networks:
+      - backend
+
+  workspace:
+    image: glide/workspace
+    build:
+      context: .
+      dockerfile: ./workspace/Dockerfile
+      args:
+        - APP_CACHE_PATH=${APP_CACHE_PATH_CONTAINER}
+        - APP_CODE_PATH=${APP_CODE_PATH_CONTAINER}
+        - APP_GROUP=${APP_GROUP}
+        - APP_GROUP_ID=${APP_GROUP_ID}
+        - APP_LOG_PATH=${APP_LOG_PATH_CONTAINER}
+        - APP_USER=${APP_USER}
+        - APP_USER_ID=${APP_USER_ID}
+        - TARGET_PHP_VERSION=${PHP_VERSION}
+        - TZ=${TIMEZONE}
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      - cache:${APP_CACHE_PATH_CONTAINER}
+      - logs:${APP_LOG_PATH_CONTAINER}
+    ports:
+      - "${WORKSPACE_SSH_PORT_HOST}:22"
+    networks:
+      - backend
+
+  php-worker:
+    image: glide/php-worker
+    build:
+      context: .
+      dockerfile: ./php-worker/Dockerfile
+      args:
+        - APP_CACHE_PATH=${APP_CACHE_PATH_CONTAINER}
+        - APP_CODE_PATH=${APP_CODE_PATH_CONTAINER}
+        - APP_GROUP=${APP_GROUP}
+        - APP_GROUP_ID=${APP_GROUP_ID}
+        - APP_LOG_PATH=${APP_LOG_PATH_CONTAINER}
+        - APP_USER=${APP_USER}
+        - APP_USER_ID=${APP_USER_ID}
+        - PHP_WORKER_COMMAND_ARGS=${PHP_WORKER_COMMAND_ARGS}
+        - PHP_WORKER_PROCESS_NUMBER=${PHP_WORKER_PROCESS_NUMBER}
+        - TARGET_PHP_VERSION=${PHP_VERSION}
+        - TZ=${TIMEZONE}
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      - cache:${APP_CACHE_PATH_CONTAINER}
+      - logs:${APP_LOG_PATH_CONTAINER}
+    networks:
+      - backend
+
+  mysql:
+    platform: linux/amd64
+    image: glide/mysql
+    ports:
+      - "${MYSQL_PORT_HOST}:3306"
+    build:
+      context: .
+      dockerfile: ./mysql/Dockerfile
+      args:
+        - MYSQL_VERSION=${MYSQL_VERSION}
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TZ=${TIMEZONE}
+    volumes:
+      - mysql:/var/lib/mysql
+    networks:
+      - backend
+
+  redis:
+    image: redis:${REDIS_VERSION}-alpine
+    ports:
+      - "${REDIS_PORT_HOST}:6379"
+    volumes:
+      - redis:/data
+    networks:
+      - backend

@@ -1,3 +1,4 @@
+# Setup Laravel on Docker
 ## WORK IN PROGRESS
 
 
@@ -21,7 +22,4 @@ Usage:
 5.  composer                     Run composer and provide the command via ARGS="command --options"
 6.  artisan                      Run artisan and provide the command via ARGS="command --options"
 4.  composer-install             Run composer install
-
-
-Note: dB file is contain in the root dir (glide.sql)
 

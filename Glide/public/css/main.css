@@ -1,0 +1,21 @@
+.title {
+    font-size: x-large;
+    color: #d81010;
+    font-weight: bolder; 
+}
+.title a {
+    color: #d81010 !important;
+    text-decoration: none !important;
+}
+.message {
+    color: rgb(10, 124, 99);
+}
+.searchBox {
+    display: flex;
+    flex-wrap: nowrap;
+    column-gap: 7px;
+}
+/* .rightalign{
+    right: 0;
+    position: absolute;
+} */
